@@ -1,0 +1,70 @@
+void creat_ture_sum_b(TString mcfile, TString outfile){
+
+    double pi = TMath::Pi();
+    double solidangle_factor = 1;
+    double GC_factor = 4.*pi; 	
+    double total_remained;
+
+    TGraph *graw=new TGraph("../dat/dm_flux/flux_mass_5e-03.txt");
+
+    int nbins = 1e5;
+    TH1D *hraw=new TH1D("hraw","hraw",nbins,5e-5,1);
+    for(int i=1;i<=nbins;i++){
+        hraw->SetBinContent(i,graw->Eval(hraw->GetBinCenter(i)));
+    }
+
+    // start each cross section
+
+    TChain *chain=new TChain("t3");
+    chain->Add(mcfile+"*.root");
+    double x[5000], y[5000], z[5000];
+    int Hit, nstep;
+    double T_before, T_reached;
+    double x_before, y_before, z_before;
+
+    chain->SetBranchAddress("x",x);	
+    chain->SetBranchAddress("y",y);	
+    chain->SetBranchAddress("z",z);	
+    chain->SetBranchAddress("Hit",&Hit);	
+    chain->SetBranchAddress("nstep",&nstep);	
+    chain->SetBranchAddress("T_before",&T_before);	
+    chain->SetBranchAddress("T_reached",&T_reached);	
+    chain->SetBranchAddress("x_before",&x_before);	
+    chain->SetBranchAddress("y_before",&y_before);	
+    chain->SetBranchAddress("z_before",&z_before);	
+
+    double Evt_reached = chain->GetEntries("Hit==2&&T_reached/1000.>5e-5");
+    double Evt_total = chain->GetEntries();
+    cout << "total=" << Evt_total << ";reached=" << Evt_reached << endl;
+    total_remained= Evt_reached;
+    // reached spectrum
+    TH1D *hreach=new TH1D("hreach","hreach",nbins,5e-5,1);
+    chain->Draw("T_reached/1000.>>hreach","Hit==2","");
+
+    // scaled reached spectrum
+    TH1D *hscale=new TH1D("hscale","hscale",nbins,5e-5,1);
+    hscale->SetLineColor(2);
+    hscale->SetTitle("Reached flux; Txl [GeV]; d#Phi/dTx [cm^{-2}s^{-1}GeV^{-1}]");
+
+    double scale_factor = Evt_reached/Evt_total*hraw->Integral("width")*GC_factor*solidangle_factor/hreach->Integral("width");
+    cout << "scale factor is " << scale_factor << endl;
+    cout <<"Raw integral = " << hraw->Integral("width") << endl;
+    cout <<"reach integral = " << hreach->Integral("width") << endl;
+
+    for(int i=1;i<=nbins;i++){
+        if(hreach->GetBinContent(i)>0)
+            hscale->SetBinContent(i,hreach->GetBinContent(i)*scale_factor);
+        else hscale->SetBinContent(i,0);
+    }
+    // Save
+    TFile *file;
+    file=new TFile(outfile,"recreate");
+    hreach->Write();
+    hscale->Write();
+
+    file->Close();
+
+    chain->Delete();
+    hscale->Delete();
+    hreach->Delete();
+}
