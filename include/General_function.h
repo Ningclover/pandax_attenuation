@@ -140,7 +140,7 @@ Double_t ThetaCM_PDF(Double_t *x, Double_t *par)
     Double_t Q = four_mon_trans.Mag();
     Double_t ff = 1./pow(1+Q*Q/lambda/lambda,2);
     // Add the DM form factor for up-philic scalar mediator
-    Double_t f_dm= (4.*pow(m1,2)+Q*Q)*pow(pow(ms,2),2)*(4.*pow(m1,2)+Q*Q)/(16.*pow(m1*m2*(pow(ms,2)+Q*Q),2));
+    Double_t f_dm= (4.*pow(m2,2)+Q*Q)*pow(pow(ms,2),2)*(4.*pow(m1,2)+Q*Q)/(16.*pow(m1*m2*(pow(ms,2)+Q*Q),2));
     ff = ff*f_dm;
     return ff;
 }
